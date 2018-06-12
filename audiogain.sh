@@ -47,19 +47,35 @@ for file in *.mp3; do
 	#cat out.txt | grep mean_volume
 	initialvolume=$(cat temp.txt | grep max_volume | cut -d : -f 2 | cut -c 2-20 | sed "s/ //g")
 	echo "Initial volume: ""$initialvolume"
-	number=$(echo "$initialvolume" | sed "s/dB//g")
-	finalvolume=$(echo ""$number"*(-1)" | bc)
-	if [ $finalvolume != 0 ]; then
-		echo "Changing volume..."
-		ffmpeg -loglevel panic -i "$file" -af "volume=""$finalvolume""dB" temp.mp3
-		rm "$file"
-		mv temp.mp3 "$file"
-		ffmpeg -i "$file" -af "volumedetect" -vn -sn -dn -f null /dev/null > temp2.txt 2>&1
-		volume=$(cat temp2.txt | grep max_volume | cut -d : -f 2 | cut -c 2-20 | sed "s/ //g")
-		echo "Final volume: ""$volume"
-		rm temp.txt temp2.txt
+	firstdigit=$(echo $initialvolume | cut -c 1)
+	if [ $firstdigit == "-" ]; then
+		if [ $(echo $initialvolume | cut -c 2) -gt 0 ]; then
+			echo "Changing volume..."
+			finalvolume=$(echo "$initialvolume" | sed "s/-//g")
+			ffmpeg -loglevel panic -i "$file" -af "volume=""$finalvolume" temp.mp3
+			rm "$file"
+			mv temp.mp3 "$file"
+			ffmpeg -i "$file" -af "volumedetect" -vn -sn -dn -f null /dev/null > temp2.txt 2>&1
+			volume=$(cat temp2.txt | grep max_volume | cut -d : -f 2 | cut -c 2-20 | sed "s/ //g")
+			echo "Final volume: ""$volume"
+			rm temp.txt temp2.txt
+		else
+			echo "Volume already at maximum, skipping"
+		fi
 	else
-		echo "Volume already at maximum, skipping"
+		if [ $(echo $initialvolume | cut -c 1) -gt 0 ]; then
+			echo "Changing volume..."
+			finalvolume="-"$initialvolume
+			ffmpeg -loglevel panic -i "$file" -af "volume=""$finalvolume" temp.mp3
+			rm "$file"
+			mv temp.mp3 "$file"
+			ffmpeg -i "$file" -af "volumedetect" -vn -sn -dn -f null /dev/null > temp2.txt 2>&1
+			volume=$(cat temp2.txt | grep max_volume | cut -d : -f 2 | cut -c 2-20 | sed "s/ //g")
+			echo "Final volume: ""$volume"
+			rm temp.txt temp2.txt
+		else
+			echo "Volume already at maximum, skipping"
+		fi
 	fi
 	echo -------------------------
 done
