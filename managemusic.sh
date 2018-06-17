@@ -42,7 +42,7 @@ Arguments:
 -n		Normalizes the volume of all audio files in folder. Useful to give all files the same volume."""
 }
 
-if [ -z ${FOLDER} ]; then
+if [ -z "${FOLDER}" ]; then
 	help
 	exit
 fi
@@ -55,7 +55,7 @@ echo NORMALIZE		= "${NORMALIZE}"
 #echo LIBRARY PATH    = "${LIBPATH}"
 #echo DEFAULT         = "${DEFAULT}"
 echo "Number of files to process:" $(ls -1 "${FOLDER}" | wc -l)
-cd ${FOLDER}
+cd "${FOLDER}"
 for file in *.mp3; do
 	echo -------------------------
 	if [ ! -z ${NORMALIZE} ] || [ ! -z ${COVERSIZE} ]; then
