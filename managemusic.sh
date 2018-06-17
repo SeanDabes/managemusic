@@ -33,7 +33,13 @@ done
 set -- "${POSITIONAL[@]}" # restore positional parameters
 
 function help(){
-echo """Please specify a folder with the -fo argument"""
+echo """Music Manager script by Koboldo
+This script is used for managing the audio files in a given folder.
+
+Arguments:
+-fo folder	Specifies the folder to work in.
+-cs nnnxnnn	Specifies the cover size. Note that this is formatted as widthxheight.
+-n		Normalizes the volume of all audio files in folder. Useful to give all files the same volume."""
 }
 
 if [ -z ${FOLDER} ]; then
