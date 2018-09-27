@@ -16,6 +16,11 @@ case $key in
     shift # past argument
     shift # past value
     ;;
+    -ic|--insertcover)
+    INSERTCOVER="$2"
+    shift # past argument
+    shift # past value
+    ;;
     -n|--normalize)
     NORMALIZE=YES
     shift # past argument
@@ -39,6 +44,7 @@ This script is used for managing the audio files in a given folder.
 Arguments:
 -fo folder	Specifies the folder to work in.
 -cs nnnxnnn	Specifies the cover size. Note that this is formatted as widthxheight.
+-ic image	Inserts a cover from the image given.
 -n		Normalizes the volume of all audio files in folder. Useful to give all files the same volume."""
 }
 
@@ -49,6 +55,7 @@ fi
 
 echo FOLDER		= "${FOLDER}"
 echo COVERSIZE		= "${COVERSIZE}"
+echo INSERTCOVER	= "${INSERTCOVER}"
 echo NORMALIZE		= "${NORMALIZE}"
 #exit
 #echo SEARCH PATH     = "${SEARCHPATH}"
@@ -98,6 +105,14 @@ for file in *.mp3; do
 			fi
 		fi
 		#echo -------------------------
+	fi
+	if [ ! -z ${INSERTCOVER} ]; then
+		echo "Removing previous album art..."
+		ffmpeg -loglevel panic -i "$file" -map 0:a -codec:a copy -map_metadata -1 audio.mp3
+		echo "Inserting new album art..."
+		rm "$file"
+		ffmpeg -loglevel panic -i audio.mp3 -i "${INSERTCOVER}" -map 0:0 -map 1:0 -c copy -id3v2_version 3 -metadata:s:v title="Album cover" -metadata:s:v comment="Cover (Front)" "$file"
+		rm audio.mp3
 	fi
 	if [ ! -z ${COVERSIZE} ]; then
 		ffmpeg -loglevel panic -i "$file" -an -vcodec copy "$file".jpg
