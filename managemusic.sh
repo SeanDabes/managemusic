@@ -21,6 +21,11 @@ case $key in
     shift # past argument
     shift # past value
     ;;
+    -c|--convert)
+    CONVERT="$2"
+    shift # past argument
+    shift # past value
+    ;;
     -n|--normalize)
     NORMALIZE=YES
     shift # past argument
@@ -45,7 +50,10 @@ echo """Music Manager script by Koboldo
 This script is used for managing the audio files in a given folder.
 
 Arguments:
--fo folder	Specifies the folder to work in.
+-fo folder	Specifies the folder to work in. MANDATORY!!
+-c format	Convert audio files into the format given.
+		Formats available:
+			- MP3
 -cs nnnxnnn	Specifies the cover size. Note that this is formatted as widthxheight.
 -ic image	Inserts a cover from the image given.
 -n		Normalizes the volume of all audio files in folder. Useful to give all files the same volume."""
@@ -115,6 +123,17 @@ function insertcover {
 	rm audio.mp3
 }
 
+function convert {
+	filename=$(basename -- "$1")
+	extension="${filename##*.}"
+	filename="${filename%.*}"
+	if [ "$extension" = "m4a" ]; then
+		ffmpeg -loglevel panic -i "$1" -vn -ar 44100 -ac 2 -ab 192k -f mp3 temp.mp3
+		rm "$1"
+		mv temp.mp3 "$filename".mp3
+	fi
+}
+
 
 ## Start working ##
 
@@ -131,6 +150,18 @@ echo NORMALIZE		= "${NORMALIZE}"
 echo "Number of files to process:" $(ls -1 "${FOLDER}" | wc -l)
 
 cd "${FOLDER}"
+
+if [ ! -z ${CONVERT} ]; then
+	echo
+	echo "Converting files..."
+	echo "---------------------------------"
+	for file in *; do
+		echo "File: ""$file"		
+		convert "$file"
+		echo
+	done
+	echo
+fi
 
 if [ ! -z ${NORMALIZE} ]; then
 	echo
