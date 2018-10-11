@@ -98,20 +98,19 @@ function normalize {
 }
 
 function coversize {
-	ffmpeg -loglevel panic -i "$1" -an -vcodec copy "$1".jpg
-	initialcoverwidth=$(identify -format "%w" "$1"".jpg")
-	initialcoverheight=$(identify -format "%h" "$1"".jpg")
+	ffmpeg -loglevel panic -i "$1" -an -vcodec copy cover.jpg
+	initialcoverwidth=$(identify -format "%w" cover.jpg)
+	initialcoverheight=$(identify -format "%h" cover.jpg)
 	if [ "$initialcoverwidth""x""$initialcoverheight" != "${COVERSIZE}" ]; then
 		echo "The cover size is: " $initialcoverwidth"x"$initialcoverheight", resizing..."
-		convert "$1"".jpg" -resize "${COVERSIZE}" "$1""_resized.jpg"
+		convert-im6.q16 cover.jpg -resize "${COVERSIZE}" cover_resized.jpg
 		echo "Adding resized cover..."
-		ffmpeg -loglevel panic -i "$1" -i "$1""_resized.jpg" -map 0:0 -map 1:0 -c copy -id3v2_version 3 -metadata:s:v title="Album cover" -metadata:s:v comment="Cover (Front)" temp2.mp3
-		rm "$1" "$1""_resized.jpg"
+		ffmpeg -loglevel panic -i "$1" -i cover_resized.jpg -map 0:0 -map 1:0 -c copy -id3v2_version 3 -metadata:s:v title="Album cover" -metadata:s:v comment="Cover (Front)" temp2.mp3
+		rm "$1" cover.jpg cover_resized.jpg
 		mv temp2.mp3 "$1"
 	else
 		echo "The cover is already at the selected size, skipping..."
 	fi
-	rm "$1".jpg
 }
 
 function insertcover {
