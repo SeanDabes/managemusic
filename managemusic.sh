@@ -98,31 +98,45 @@ function normalize {
 }
 
 function coversize {
+	albuminfo=$(ffprobe -loglevel error -show_entries format_tags=album -of default=noprint_wrappers=1:nokey=1 """$1""")
 	ffmpeg -loglevel panic -i "$1" -an -vcodec copy cover.jpg
 	initialcoverwidth=$(identify -format "%w" cover.jpg)
 	initialcoverheight=$(identify -format "%h" cover.jpg)
-	if [ "$initialcoverwidth""x""$initialcoverheight" != "${COVERSIZE}" ]; then
-		echo "The cover size is: " $initialcoverwidth"x"$initialcoverheight", resizing..."
-		convert-im6.q16 cover.jpg -resize "${COVERSIZE}" cover_resized.jpg
-		echo "Adding resized cover..."
-		ffmpeg -loglevel panic -i "$1" -i cover_resized.jpg -map 0:0 -map 1:0 -c copy -id3v2_version 3 -metadata:s:v title="Album cover" -metadata:s:v comment="Cover (Front)" temp2.mp3
-		rm "$1" cover.jpg cover_resized.jpg
-		mv temp2.mp3 "$1"
+	if [ "$initialcoverwidth" != "$initialcoverheight" ]; then
+		echo "The cover size is not square."
+		if [ ! -e "$albuminfo"".jpg" ]; then			
+			mv cover.jpg "$albuminfo"".jpg"
+			if [ ! -e "cover.tmp" ]; then
+				touch "cover.tmp"
+			fi
+		else
+			rm cover.jpg
+		fi
 	else
-		echo "The cover is already at the selected size, skipping..."
+		if [ "$initialcoverwidth""x""$initialcoverheight" != "${COVERSIZE}" ]; then
+			echo "The cover size is: " $initialcoverwidth"x"$initialcoverheight", resizing..."
+			convert-im6.q16 cover.jpg -resize "${COVERSIZE}" cover_resized.jpg
+			echo "Adding resized cover..."
+			ffmpeg -loglevel panic -i "$1" -i cover_resized.jpg -map 0:0 -map 1:0 -c copy -id3v2_version 3 -metadata:s:v title="Album cover" -metadata:s:v comment="Cover (Front)" temp2.mp3
+			rm "$1" cover.jpg cover_resized.jpg
+			mv temp2.mp3 "$1"
+		else
+			echo "The cover is already at the selected size, skipping..."
+			rm cover.jpg
+		fi
 	fi
 }
 
 function insertcover {
 	echo "Removing previous album art..."
-	ffmpeg -loglevel panic -i "$file" -map 0:a -codec:a copy -map_metadata -1 audio.mp3
+	ffmpeg -loglevel panic -i "$1" -map 0:a -codec:a copy -map_metadata -1 audio.mp3
 	echo "Inserting new album art..."
-	rm "$file"
-	ffmpeg -loglevel panic -i audio.mp3 -i "${INSERTCOVER}" -map 0:0 -map 1:0 -c copy -id3v2_version 3 -metadata:s:v title="Album cover" -metadata:s:v comment="Cover (Front)" "$file"
+	rm "$1"
+	ffmpeg -loglevel panic -i audio.mp3 -i "${INSERTCOVER}" -map 0:0 -map 1:0 -c copy -id3v2_version 3 -metadata:s:v title="Album cover" -metadata:s:v comment="Cover (Front)" "$1"
 	rm audio.mp3
 }
 
-function convert {
+function convertformat {
 	filename=$(basename -- "$1")
 	extension="${filename##*.}"
 	filename="${filename%.*}"
@@ -156,7 +170,7 @@ if [ ! -z ${CONVERT} ]; then
 	echo "---------------------------------"
 	for file in *; do
 		echo "File: ""$file"		
-		convert "$file"
+		convertformat "$file"
 		echo
 	done
 	echo
@@ -196,6 +210,13 @@ if [ ! -z ${COVERSIZE} ]; then
 		echo
 	done
 	echo
+	if [ -e "cover.tmp" ]; then
+		echo "WARNING!"
+		echo "Some covers are not square."
+		echo "This can cause issues while showing in some devices."
+		echo "Please, edit them with GIMP and insert them with the -ic option."
+		rm "cover.tmp"
+	fi
 fi
 
 cd ..
