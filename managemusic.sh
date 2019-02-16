@@ -21,6 +21,10 @@ case $key in
     shift # past argument
     shift # past value
     ;;
+    -ec|--extractcover)
+    EXTRACTCOVER="$2"
+    shift # past argument
+    ;;
     -c|--convert)
     CONVERT="$2"
     shift # past argument
@@ -56,7 +60,8 @@ Arguments:
 			- MP3
 -cs nnnxnnn	Specifies the cover size. Note that this is formatted as widthxheight.
 -ic image	Inserts a cover from the image given.
--n		Normalizes the volume of all audio files in folder. Useful to give all files the same volume."""
+-ec     	Extracts all covers from audio files in folder.
+-n	    	Normalizes the volume of all audio files in folder. Useful to give all files the same volume."""
 }
 
 
@@ -127,6 +132,10 @@ function coversize {
 	fi
 }
 
+function extractcover {
+	ffmpeg -loglevel panic -i "$1" -an -vcodec copy "$1".jpg
+}
+
 function insertcover {
 	echo "Removing previous album art..."
 	ffmpeg -loglevel panic -i "$1" -map 0:a -codec:a copy -map_metadata -1 audio.mp3
@@ -158,6 +167,7 @@ fi
 echo FOLDER		= "${FOLDER}"
 echo COVERSIZE		= "${COVERSIZE}"
 echo INSERTCOVER	= "${INSERTCOVER}"
+echo EXTRACTCOVER	= "${EXTRACTCOVER}"
 echo NORMALIZE		= "${NORMALIZE}"
 
 echo "Number of files to process:" $(ls -1 "${FOLDER}" | wc -l)
@@ -195,6 +205,18 @@ if [ ! -z ${INSERTCOVER} ]; then
 	for file in *.mp3; do
 		echo "File: ""$file"
 		insertcover "$file"
+		echo
+	done
+	echo
+fi
+
+if [ ! -z ${EXTRACTCOVER} ]; then
+	echo
+	echo "Extracting album covers..."
+	echo "---------------------------------"
+	for file in *.mp3; do
+		echo "File: ""$file"
+		extractcover "$file"
 		echo
 	done
 	echo
