@@ -19,7 +19,6 @@ case $key in
     -ic|--insertcover)
     INSERTCOVER="$2"
     shift # past argument
-    shift # past value
     ;;
     -ec|--extractcover)
     EXTRACTCOVER="$2"
@@ -59,7 +58,10 @@ Arguments:
 		Formats available:
 			- MP3
 -cs nnnxnnn	Specifies the cover size. Note that this is formatted as widthxheight.
--ic image	Inserts a cover from the image given.
+-ic         Inserts a cover. Image must:
+                - Have the same name than the audio file.
+                - Be in jpg format.
+                - Stay in the same folder.
 -ec     	Extracts all covers from audio files in folder.
 -n	    	Normalizes the volume of all audio files in folder. Useful to give all files the same volume."""
 }
@@ -137,12 +139,20 @@ function extractcover {
 }
 
 function insertcover {
-	echo "Removing previous album art..."
-	ffmpeg -loglevel panic -i "$1" -map 0:a -codec:a copy -map_metadata -1 audio.mp3
+    filename=$(basename -- "$1")
+	extension="${filename##*.}"
+	filename="${filename%.*}"
+    echo "$filename"".jpg"
+    cover="$filename"".jpg"
 	echo "Inserting new album art..."
-	rm "$1"
-	ffmpeg -loglevel panic -i audio.mp3 -i "${INSERTCOVER}" -map 0:0 -map 1:0 -c copy -id3v2_version 3 -metadata:s:v title="Album cover" -metadata:s:v comment="Cover (Front)" "$1"
-	rm audio.mp3
+    if [ -f "$cover" ]; then
+        mv "$1" audio.mp3
+        ffmpeg -loglevel panic -i audio.mp3 -i "$cover" -map 0:0 -map 1:0 -c copy -id3v2_version 3 -metadata:s:v title="Album cover" -metadata:s:v comment="Cover (Front)" audio2.mp3
+        mv audio2.mp3 "$1"
+        rm audio.mp3
+    else
+        echo "Cover image not found. Skipping..."
+    fi
 }
 
 function convertformat {
