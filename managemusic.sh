@@ -25,7 +25,7 @@ case $key in
     shift # past argument
     ;;
     -c|--convert)
-    CONVERT="$2"
+    CONVERT=YES
     shift # past argument
     shift # past value
     ;;
@@ -179,6 +179,7 @@ echo COVERSIZE		= "${COVERSIZE}"
 echo INSERTCOVER	= "${INSERTCOVER}"
 echo EXTRACTCOVER	= "${EXTRACTCOVER}"
 echo NORMALIZE		= "${NORMALIZE}"
+echo CONVERTFORMAT  = "${CONVERT}"
 
 echo "Number of files to process:" $(ls -1 "${FOLDER}" | wc -l)
 
